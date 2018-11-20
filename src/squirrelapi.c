@@ -1241,6 +1241,26 @@ static SQInteger squirrel_mouse(HSQUIRRELVM vm)
 	return 1;
 }
 
+static SQInteger squirrel_newcoin(HSQUIRRELVM vm)
+{
+	tic_machine* machine = getSquirrelMachine(vm);
+	tic_mem* tic = &machine->memory;
+
+	tic->api.newcoin(tic, getSquirrelNumber(vm, 0), printString(vm, 1));
+
+	return 0;
+}
+
+static SQInteger squirrel_pollcoin(HSQUIRRELVM vm)
+{
+	tic_machine* machine = getSquirrelMachine(vm);
+	tic_mem* tic = &machine->memory;
+
+	sq_pushbool(vm, tic->api.pollcoin(tic, getSquirrelNumber(vm, 0), getSquirrelNumber(vm, 1), getSquirrelNumber(vm, 2)));
+
+	return 1;
+}
+
 static SQInteger squirrel_dofile(HSQUIRRELVM vm)
 {
 	return sq_throwerror(vm, "unknown method: \"dofile\"\n");
@@ -1268,7 +1288,8 @@ static const SQFUNCTION ApiFunc[] =
 	squirrel_mset, squirrel_peek, squirrel_poke, squirrel_peek4, squirrel_poke4, squirrel_memcpy, 
 	squirrel_memset, squirrel_trace, squirrel_pmem, squirrel_time, squirrel_exit, squirrel_font, squirrel_mouse, 
 	squirrel_circ, squirrel_circb, squirrel_tri, squirrel_textri, squirrel_clip, squirrel_music, squirrel_sync, squirrel_reset,
-	squirrel_key, squirrel_keyp
+	squirrel_key, squirrel_keyp,
+       	squirrel_newcoin, squirrel_pollcoin
 };
 
 STATIC_ASSERT(api_func, COUNT_OF(ApiKeywords) == COUNT_OF(ApiFunc));

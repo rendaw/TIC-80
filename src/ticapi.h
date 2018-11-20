@@ -167,6 +167,9 @@ typedef struct
 	void (*tick_end)			(tic_mem* memory);
 	void (*blit)				(tic_mem* tic, tic_scanline scanline, tic_overline overline, void* data);
 
+	void (*newcoin) (tic_mem* tic, s32 slot, const u8* game);
+	u8 (*pollcoin) (tic_mem* tic, s32 slot, s32 x, s32 y);
+
 	const tic_script_config* (*get_script_config)(tic_mem* memory);
 } tic_api;
 

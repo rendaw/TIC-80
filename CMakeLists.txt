@@ -213,9 +213,10 @@ target_include_directories(tic80core PRIVATE 3rd-party/wren-0.1.0/src/include)
 target_include_directories(tic80core PRIVATE 3rd-party/squirrel/include)
 target_include_directories(tic80core PRIVATE 3rd-party/moonscript)
 target_include_directories(tic80core PRIVATE 3rd-party/fennel)
+target_include_directories(tic80core PRIVATE 3rd-party-2/qrcodegen)
 
-add_dependencies(tic80core lua lpeg wren squirrel giflib)
-target_link_libraries(tic80core lua lpeg wren squirrel giflib)
+add_dependencies(tic80core lua lpeg wren squirrel giflib qrcodegen)
+target_link_libraries(tic80core lua lpeg wren squirrel giflib qrcodegen)
 
 ################################
 # SDL2
@@ -349,6 +350,17 @@ set(ZLIB_SRC
 )
 
 add_library(zlib STATIC ${ZLIB_SRC})
+
+################################
+# qrcodegen
+################################
+
+set(QRCODEGEN_DIR 3rd-party-2/qrcodegen)
+set(QRCODEGEN_SRC 
+	${QRCODEGEN_DIR}/qrcodegen.c
+)
+
+add_library(qrcodegen STATIC ${QRCODEGEN_SRC})
 
 ################################
 # bin2txt

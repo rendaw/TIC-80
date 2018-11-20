@@ -856,6 +856,26 @@ static s32 lua_keyp(lua_State* lua)
 	return 1;
 }
 
+static s32 lua_newcoin(lua_State* lua)
+{
+	tic_machine* machine = getLuaMachine(lua);
+	tic_mem* tic = &machine->memory;
+
+	tic->api.newcoin(tic, lua_tointeger(lua, 0), lua_tostring(lua, 1));
+
+	return 0;
+}
+
+static s32 lua_pollcoin(lua_State* lua)
+{
+	tic_machine* machine = getLuaMachine(lua);
+	tic_mem* tic = &machine->memory;
+
+	lua_pushboolean(lua, tic->api.pollcoin(tic, lua_tointeger(lua, 0), lua_tointeger(lua, 1), lua_tointeger(lua, 2)));
+
+	return 1;
+}
+
 static s32 lua_memcpy(lua_State* lua)
 {
 	s32 top = lua_gettop(lua);
@@ -1172,7 +1192,8 @@ static const lua_CFunction ApiFunc[] =
 	lua_mset, lua_peek, lua_poke, lua_peek4, lua_poke4, lua_memcpy, 
 	lua_memset, lua_trace, lua_pmem, lua_time, lua_exit, lua_font, lua_mouse, 
 	lua_circ, lua_circb, lua_tri, lua_textri, lua_clip, lua_music, lua_sync, lua_reset,
-	lua_key, lua_keyp
+	lua_key, lua_keyp,
+	lua_newcoin, lua_pollcoin
 };
 
 STATIC_ASSERT(api_func, COUNT_OF(ApiKeywords) == COUNT_OF(ApiFunc));

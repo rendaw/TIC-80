@@ -2005,6 +2005,98 @@ static void api_blit(tic_mem* tic, tic_scanline scanline, tic_overline overline,
 		overline(tic, data);
 }
 
+#if defined(__EMSCRIPTEN__)
+
+#include <emscripten.h>
+#include <qrcodegen.h>
+#define COINSLOTS 8
+u8 qr_art[COINSLOTS][qrcodegen_BUFFER_LEN_MAX];
+
+static void render_coin_addr(u8 slot, const u8* address)
+{
+	u8 tempBuffer[qrcodegen_BUFFER_LEN_MAX];
+	qrcodegen_encodeText(
+		address,
+		tempBuffer,
+	       	qr_art[slot],
+	       	qrcodegen_Ecc_HIGH,
+		qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX,
+		qrcodegen_Mask_AUTO,
+	       	1
+	);
+}
+
+#endif
+
+static void api_newcoin(tic_mem* tic, s32 slot, const u8* game)
+{
+#if defined(__EMSCRIPTEN__)
+	EM_ASM_
+	({
+		if (!window.coinSlots) {
+			window.coinSlots = {}
+		}
+		if (window.coinSlots[$1]) {
+			window.coinSlots[$1].close()
+		}
+		const ws = new WebSocket('wss://backend.games.micromicro.cash/address')
+		window.coinSlots[$1] = ws;
+		ws.addEventListener('error', () => {
+			ws.close()
+			window.coinSlots[$1] = null
+		})
+		ws.addEventListener('open', () => {
+			ws.send(JSON.stringify({'game': $0}))
+		})
+		ws.addEventListener('message', event => {
+			message = JSON.parse(event.data)
+			if (message.address) {
+				const sptr = Module._malloc(message.address.length + 1);
+				stringToUTF8(message.filename, sptr, message.filename.length + 1);
+				Runtime.dynCall('vii', $2, [$1, sptr]);
+			} else if (message.event && message.event == 'paid') {
+				ws.close()
+				window.coinSlots[$1] = null
+			}
+		})
+	}, game, slot, render_coin_addr)
+#endif
+}
+
+u8 api_pollcoin (tic_mem* tic, s32 slot, s32 x, s32 y)
+{
+#if defined(__EMSCRIPTEN__)
+	u8 waiting = EM_ASM_INT
+	({
+		if (!window.coinSlots) {
+			window.coinSlots = {}
+		}
+		return window.coinSlots[$0] == null ? 0 : 1
+	}, slot)
+	if (waiting)
+	{
+		tic_machine* machine = (tic_machine*)tic;
+		u8 size = qrcodegen_getSize(qr0);
+		for (u8 qy = 0; qy < size; qy++) {
+			for (u8 qx = 0; qx < size; qx++) {
+				machine.setpix(
+					&machine->memory,
+					x + qx, y + qy, 
+					qrcodegen_getModule(qr0, x, y) ? 13 : 0
+				);
+			}
+		}
+		return 0;
+	}
+	else 
+	{
+		return 1;
+	}
+#else
+	return 1;
+#endif
+}
+
 static void initApi(tic_api* api)
 {
 #define INIT_API(func) api->func = api_##func
@@ -2052,6 +2144,8 @@ static void initApi(tic_api* api)
 	INIT_API(tick_start);
 	INIT_API(tick_end);
 	INIT_API(blit);
+	INIT_API(newcoin);
+	INIT_API(pollcoin);
 
 	INIT_API(get_script_config);
 
