@@ -1118,16 +1118,7 @@ static void wren_pollcoin(WrenVM* vm)
 {
 	tic_mem* memory = (tic_mem*)getWrenMachine(vm);
 
-	wrenSetSlotDouble
-	(
-		vm,
-	       	0,
-		memory->api.pollcoin
-		(
-			memory,
-		       	getWrenNumber(vm, 0), getWrenNumber(vm, 1), getWrenNumber(vm, 2)
-	       	)
-	);
+	wrenSetSlotDouble(vm, 0, memory->api.pollcoin(memory, getWrenNumber(vm, 0)));
 }
 
 static const char* const ApiKeywords[] = API_KEYWORDS;

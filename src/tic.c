@@ -2010,10 +2010,12 @@ static void api_blit(tic_mem* tic, tic_scanline scanline, tic_overline overline,
 #include <emscripten.h>
 #include <qrcodegen.h>
 #define COINSLOTS 8
+u8 qr_art_ready[COINSLOTS];
 u8 qr_art[COINSLOTS][qrcodegen_BUFFER_LEN_MAX];
 
 static void render_coin_addr(u8 slot, const char* address)
 {
+	qr_art_ready[slot] = 1;
 	u8 tempBuffer[qrcodegen_BUFFER_LEN_MAX];
 	qrcodegen_encodeText(
 		address,
@@ -2028,55 +2030,72 @@ static void render_coin_addr(u8 slot, const char* address)
 
 #endif
 
-static void api_newcoin(tic_mem* tic, s32 slot, const u8* game)
+static void api_newcoin(tic_mem* tic, s32 slot, const char* game)
 {
+	qr_art_ready[slot] = 0;
 #if defined(__EMSCRIPTEN__)
 	EM_ASM_
 	({
 		if (!window.coinSlots) {
-			window.coinSlots = {}
+			window.coinSlots = {};
 		}
-		if (window.coinSlots[$1]) {
-			window.coinSlots[$1].close()
+		if (window.coinSlots[$0]) {
+			window.coinSlots[$0].close();
 		}
-		const ws = new WebSocket('wss://backend.games.micromicro.cash/address')
-		window.coinSlots[$1] = ws;
+		const ws = new WebSocket('wss://backend.games.micromicro.cash/address');
+		window.coinSlots[$0] = ws;
 		ws.addEventListener('error', () => {
-			ws.close()
-			window.coinSlots[$1] = null
-		})
+			ws.close();
+			window.coinSlots[$0] = null;
+		});
 		ws.addEventListener('open', () => {
-			ws.send(JSON.stringify({'game': $0}))
-		})
+			ws.send(JSON.stringify({'game': Pointer_stringify($1)}));
+		});
 		ws.addEventListener('message', event => {
-			message = JSON.parse(event.data)
-			if (message.address) {
-				const sptr = Module._malloc(message.address.length + 1);
-				stringToUTF8(message.filename, sptr, message.filename.length + 1);
-				Runtime.dynCall('vii', $2, [$1, sptr]);
-			} else if (message.event && message.event == 'paid') {
-				ws.close()
-				window.coinSlots[$1] = null
+			message = JSON.parse(event.data);
+			if (message.error) {
+				console.log(message.error);
+				window.coinSlots[$0] = null;
+				return;
 			}
-		})
-	}, game, slot, render_coin_addr);
+			if (message.address) {
+				const addr = 'https://micromicro.cash/app/#in/' + message.address;
+				const sptr = Module._malloc(addr.length + 1);
+				stringToUTF8(addr, sptr, addr.length + 1);
+				Runtime.dynCall('vii', $2, [$0, sptr]);
+				Module._free(sptr);
+			} else if (message.event && message.event == 'paid') {
+				ws.close();
+				window.coinSlots[$0] = null;
+				return;
+			} else {
+				console.log('Unknown response', message);
+				window.coinSlots[$0] = null;
+				return;
+			}
+		});
+	}, slot, game, render_coin_addr);
 #endif
 }
 
-u8 api_pollcoin (tic_mem* tic, s32 slot, s32 x, s32 y)
+static const u8 coincenter_y = TIC_HEIGHT / 2;
+static const u8 coincenter_x = TIC_WIDTH - TIC_HEIGHT;
+u8 api_pollcoin (tic_mem* tic, s32 slot)
 {
 #if defined(__EMSCRIPTEN__)
 	u8 waiting = EM_ASM_INT
 	({
 		if (!window.coinSlots) {
-			window.coinSlots = {}
+			window.coinSlots = {};
 		}
-		return window.coinSlots[$0] == null ? 0 : 1
+		return !window.coinSlots[$0] ? 0 : 1;
 	}, slot);
-	if (waiting)
+	if (waiting && qr_art_ready[slot])
 	{
 		tic_machine* machine = (tic_machine*)tic;
 		u8 size = qrcodegen_getSize(qr_art[slot]);
+		u8 x = coincenter_x - (size + 1) / 2;
+		u8 y = coincenter_y - (size + 1) / 2;
 		for (u8 qy = 0; qy < size; qy++) {
 			for (u8 qx = 0; qx < size; qx++) {
 				setPixel(
