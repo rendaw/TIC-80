@@ -871,7 +871,7 @@ static s32 lua_pollcoin(lua_State* lua)
 	tic_machine* machine = getLuaMachine(lua);
 	tic_mem* tic = &machine->memory;
 
-	lua_pushboolean(lua, tic->api.pollcoin(tic, lua_tointeger(lua, 1)));
+	lua_pushboolean(lua, tic->api.pollcoin(tic, lua_tointeger(lua, 1), lua_tointeger(lua, 2), lua_tointeger(lua, 3)));
 
 	return 1;
 }

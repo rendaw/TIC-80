@@ -790,7 +790,7 @@ static duk_ret_t duk_pollcoin(duk_context* duk)
 {
 	tic_mem* memory = (tic_mem*)getDukMachine(duk);
 
-	duk_push_int(duk, memory->api.pollcoin(memory, duk_to_int(duk, 0)));
+	duk_push_int(duk, memory->api.pollcoin(memory, duk_to_int(duk, 0), duk_to_int(duk, 1), duk_to_int(duk, 2)));
 
 	return 1;
 }

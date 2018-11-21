@@ -2017,7 +2017,7 @@ static void render_coin_addr(u8 slot, const char* address)
 {
 	qr_art_ready[slot] = 1;
 	u8 tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-	qrcodegen_encodeText(
+	u8 ok = qrcodegen_encodeText(
 		address,
 		tempBuffer,
 	       	qr_art[slot],
@@ -2059,7 +2059,7 @@ static void api_newcoin(tic_mem* tic, s32 slot, const char* game)
 				return;
 			}
 			if (message.address) {
-				const addr = 'https://micromicro.cash/app/#in/' + message.address;
+				const addr = message.address;
 				const sptr = Module._malloc(addr.length + 1);
 				stringToUTF8(addr, sptr, addr.length + 1);
 				Runtime.dynCall('vii', $2, [$0, sptr]);
@@ -2078,9 +2078,9 @@ static void api_newcoin(tic_mem* tic, s32 slot, const char* game)
 #endif
 }
 
-static const u8 coincenter_y = TIC_HEIGHT / 2;
-static const u8 coincenter_x = TIC_WIDTH - TIC_HEIGHT;
-u8 api_pollcoin (tic_mem* tic, s32 slot)
+static const u8 coincenter_y = TIC80_HEIGHT / 2;
+static const u8 coincenter_x = TIC80_WIDTH - coincenter_y;
+u8 api_pollcoin (tic_mem* tic, s32 slot, u8 bg, u8 fg)
 {
 #if defined(__EMSCRIPTEN__)
 	u8 waiting = EM_ASM_INT
@@ -2090,19 +2090,23 @@ u8 api_pollcoin (tic_mem* tic, s32 slot)
 		}
 		return !window.coinSlots[$0] ? 0 : 1;
 	}, slot);
-	if (waiting && qr_art_ready[slot])
+	if (waiting)
 	{
-		tic_machine* machine = (tic_machine*)tic;
-		u8 size = qrcodegen_getSize(qr_art[slot]);
-		u8 x = coincenter_x - (size + 1) / 2;
-		u8 y = coincenter_y - (size + 1) / 2;
-		for (u8 qy = 0; qy < size; qy++) {
-			for (u8 qx = 0; qx < size; qx++) {
-				setPixel(
-					machine,
-					x + qx, y + qy, 
-					qrcodegen_getModule(qr_art[slot], x, y) ? 13 : 0
-				);
+		api_clear(tic, fg);
+		if (qr_art_ready[slot])
+		{
+			tic_machine* machine = (tic_machine*)tic;
+			u8 size = qrcodegen_getSize(qr_art[slot]);
+			u8 x = coincenter_x - size;
+			u8 y = coincenter_y - size;
+			for (s32 qy = -4; qy < size + 4; ++qy) {
+				for (s32 qx = -4; qx < size + 4; ++qx) {
+					u8 p = qrcodegen_getModule(qr_art[slot], qx, qy) ? fg : bg;
+					setPixel(machine, x + qx * 2, y + qy * 2, p);
+					setPixel(machine, x + qx * 2 + 1, y + qy * 2, p);
+					setPixel(machine, x + qx * 2, y + qy * 2 + 1, p);
+					setPixel(machine, x + qx * 2 + 1, y + qy * 2 + 1, p);
+				}
 			}
 		}
 		return 0;
