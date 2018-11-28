@@ -1246,7 +1246,7 @@ static SQInteger squirrel_newcoin(HSQUIRRELVM vm)
 	tic_machine* machine = getSquirrelMachine(vm);
 	tic_mem* tic = &machine->memory;
 
-	tic->api.newcoin(tic, getSquirrelNumber(vm, 1), printString(vm, 2));
+	tic->api.newcoin(tic, printString(vm, 1));
 
 	return 0;
 }
@@ -1256,7 +1256,7 @@ static SQInteger squirrel_pollcoin(HSQUIRRELVM vm)
 	tic_machine* machine = getSquirrelMachine(vm);
 	tic_mem* tic = &machine->memory;
 
-	sq_pushbool(vm, tic->api.pollcoin(tic, getSquirrelNumber(vm, 1), getSquirrelNumber(vm, 2), getSquirrelNumber(vm, 3)));
+	sq_pushbool(vm, tic->api.pollcoin(tic, getSquirrelNumber(vm, 1), getSquirrelNumber(vm, 2)));
 
 	return 1;
 }

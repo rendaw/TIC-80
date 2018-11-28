@@ -861,7 +861,7 @@ static s32 lua_newcoin(lua_State* lua)
 	tic_machine* machine = getLuaMachine(lua);
 	tic_mem* tic = &machine->memory;
 
-	tic->api.newcoin(tic, lua_tointeger(lua, 1), lua_tostring(lua, 2));
+	tic->api.newcoin(tic, lua_tostring(lua, 1));
 
 	return 0;
 }
@@ -871,7 +871,7 @@ static s32 lua_pollcoin(lua_State* lua)
 	tic_machine* machine = getLuaMachine(lua);
 	tic_mem* tic = &machine->memory;
 
-	lua_pushboolean(lua, tic->api.pollcoin(tic, lua_tointeger(lua, 1), lua_tointeger(lua, 2), lua_tointeger(lua, 3)));
+	lua_pushboolean(lua, tic->api.pollcoin(tic, lua_tointeger(lua, 1), lua_tointeger(lua, 2)));
 
 	return 1;
 }

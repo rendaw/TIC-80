@@ -781,7 +781,7 @@ static duk_ret_t duk_newcoin(duk_context* duk)
 {
 	tic_mem* memory = (tic_mem*)getDukMachine(duk);
 
-	memory->api.newcoin(memory, duk_to_int(duk, 0), duk_to_string(duk, 1));
+	memory->api.newcoin(memory, duk_to_string(duk, 0));
 
 	return 0;
 }
@@ -790,7 +790,7 @@ static duk_ret_t duk_pollcoin(duk_context* duk)
 {
 	tic_mem* memory = (tic_mem*)getDukMachine(duk);
 
-	duk_push_int(duk, memory->api.pollcoin(memory, duk_to_int(duk, 0), duk_to_int(duk, 1), duk_to_int(duk, 2)));
+	duk_push_int(duk, memory->api.pollcoin(memory, duk_to_int(duk, 0), duk_to_int(duk, 1)));
 
 	return 1;
 }
@@ -836,8 +836,8 @@ static const struct{duk_c_function func; s32 params;} ApiFunc[] =
 	{duk_reset, 0},
 	{duk_key, 1},
 	{duk_keyp, 3},
-	{duk_newcoin, 2},
-	{duk_pollcoin, 1},
+	{duk_newcoin, 1},
+	{duk_pollcoin, 2},
 };
 
 STATIC_ASSERT(api_func, COUNT_OF(ApiKeywords) == COUNT_OF(ApiFunc));

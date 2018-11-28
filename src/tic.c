@@ -2009,18 +2009,17 @@ static void api_blit(tic_mem* tic, tic_scanline scanline, tic_overline overline,
 
 #include <emscripten.h>
 #include <qrcodegen.h>
-#define COINSLOTS 8
-u8 qr_art_ready[COINSLOTS];
-u8 qr_art[COINSLOTS][qrcodegen_BUFFER_LEN_MAX];
+u8 qr_art_ready;
+u8 qr_art[qrcodegen_BUFFER_LEN_MAX];
 
-static void render_coin_addr(u8 slot, const char* address)
+static void render_coin_addr(const char* address)
 {
-	qr_art_ready[slot] = 1;
+	qr_art_ready = 1;
 	u8 tempBuffer[qrcodegen_BUFFER_LEN_MAX];
 	u8 ok = qrcodegen_encodeText(
 		address,
 		tempBuffer,
-	       	qr_art[slot],
+	       	qr_art,
 	       	qrcodegen_Ecc_HIGH,
 		qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX,
 		qrcodegen_Mask_AUTO,
@@ -2030,78 +2029,72 @@ static void render_coin_addr(u8 slot, const char* address)
 
 #endif
 
-static void api_newcoin(tic_mem* tic, s32 slot, const char* game)
+static void api_newcoin(tic_mem* tic, const char* game)
 {
-	qr_art_ready[slot] = 0;
+	qr_art_ready = 0;
 #if defined(__EMSCRIPTEN__)
 	EM_ASM_
 	({
-		if (!window.coinSlots) {
-			window.coinSlots = {};
-		}
-		if (window.coinSlots[$0]) {
-			window.coinSlots[$0].close();
+		if (window.coinSlot) {
+			window.coinSlot.close();
 		}
 		const ws = new WebSocket('wss://backend.games.micromicro.cash/address');
-		window.coinSlots[$0] = ws;
+		window.coinSlot = ws;
 		ws.addEventListener('error', () => {
 			ws.close();
-			window.coinSlots[$0] = null;
+			window.coinSlot = null;
 		});
 		ws.addEventListener('open', () => {
-			ws.send(JSON.stringify({'game': Pointer_stringify($1)}));
+			ws.send(JSON.stringify({'game': Pointer_stringify($0)}));
 		});
 		ws.addEventListener('message', event => {
 			message = JSON.parse(event.data);
 			if (message.error) {
 				console.log(message.error);
-				window.coinSlots[$0] = null;
+				window.coinSlot = null;
 				return;
 			}
 			if (message.address) {
 				const addr = message.address;
 				const sptr = Module._malloc(addr.length + 1);
 				stringToUTF8(addr, sptr, addr.length + 1);
-				Runtime.dynCall('vii', $2, [$0, sptr]);
+				Runtime.dynCall('vi', $1, [sptr]);
 				Module._free(sptr);
 			} else if (message.event && message.event == 'paid') {
 				ws.close();
-				window.coinSlots[$0] = null;
+				window.coinSlot = null;
 				return;
 			} else {
 				console.log('Unknown response', message);
-				window.coinSlots[$0] = null;
+				window.coinSlot = null;
 				return;
 			}
 		});
-	}, slot, game, render_coin_addr);
+	}, game, render_coin_addr);
 #endif
 }
 
 static const u8 coincenter_y = TIC80_HEIGHT / 2;
 static const u8 coincenter_x = TIC80_WIDTH - coincenter_y;
-u8 api_pollcoin (tic_mem* tic, s32 slot, u8 bg, u8 fg)
+bool api_pollcoin (tic_mem* tic, u8 bg, u8 fg)
 {
 #if defined(__EMSCRIPTEN__)
 	u8 waiting = EM_ASM_INT
 	({
-		if (!window.coinSlots) {
-			window.coinSlots = {};
-		}
-		return !window.coinSlots[$0] ? 0 : 1;
-	}, slot);
+		return !window.coinSlot ? 0 : 1;
+	});
 	if (waiting)
 	{
 		api_clear(tic, fg);
-		if (qr_art_ready[slot])
+		tic_machine* machine = (tic_machine*)tic;
+		if (qr_art_ready)
 		{
-			tic_machine* machine = (tic_machine*)tic;
-			u8 size = qrcodegen_getSize(qr_art[slot]);
+			u8 size = qrcodegen_getSize(qr_art);
 			u8 x = coincenter_x - size;
 			u8 y = coincenter_y - size;
 			for (s32 qy = -4; qy < size + 4; ++qy) {
 				for (s32 qx = -4; qx < size + 4; ++qx) {
-					u8 p = qrcodegen_getModule(qr_art[slot], qx, qy) ? fg : bg;
+					u8 p = qrcodegen_getModule(qr_art, qx, qy) ? fg : bg;
 					setPixel(machine, x + qx * 2, y + qy * 2, p);
 					setPixel(machine, x + qx * 2 + 1, y + qy * 2, p);
 					setPixel(machine, x + qx * 2, y + qy * 2 + 1, p);
@@ -2109,14 +2102,34 @@ u8 api_pollcoin (tic_mem* tic, s32 slot, u8 bg, u8 fg)
 				}
 			}
 		}
-		return 0;
+		else
+		{
+			const s32 text_height = 8;
+			s32 size = tic->api.text_ex(tic, "...", 0, -10, 0, false, 1, false);
+			s32 left = coincenter_x - size / 2;
+			drawRect
+			(
+				machine,
+			       	left - 4, coincenter_y - text_height / 2 - 4,
+			       	size + 4 * 2, text_height + 4 * 2,
+			       	bg
+			);
+			tic->api.text_ex
+			(
+				tic,
+			       	"...",
+			       	left, coincenter_y - text_height / 2,
+			       	fg, false, 1, false
+			);
+		}
+		return false;
 	}
 	else 
 	{
-		return 1;
+		return true;
 	}
 #else
-	return 1;
+	return true;
 #endif
 }
 
