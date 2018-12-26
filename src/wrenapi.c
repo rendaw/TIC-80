@@ -1121,6 +1121,13 @@ static void wren_pollcoin(WrenVM* vm)
 	wrenSetSlotDouble(vm, 0, memory->api.pollcoin(memory, getWrenNumber(vm, 1), getWrenNumber(vm, 2)));
 }
 
+static void wren_clearcoin(WrenVM* vm)
+{
+	tic_mem* memory = (tic_mem*)getWrenMachine(vm);
+
+	memory->api.clearcoin(memory);
+}
+
 static const char* const ApiKeywords[] = API_KEYWORDS;
 
 static WrenForeignMethodFn foreignTicMethods(const char* signature)
@@ -1205,7 +1212,8 @@ static WrenForeignMethodFn foreignTicMethods(const char* signature)
 	if (strcmp(signature, "static TIC.exit()"    			    ) == 0) return wren_exit;
 
 	if (strcmp(signature, "static TIC.newcoin(_)"    			    ) == 0) return wren_newcoin;
-	if (strcmp(signature, "static TIC.pollcoin()"    			    ) == 0) return wren_pollcoin;
+	if (strcmp(signature, "static TIC.pollcoin(_,_)"    			    ) == 0) return wren_pollcoin;
+	if (strcmp(signature, "static TIC.clearcoin()"    			    ) == 0) return wren_clearcoin;
 
 	// internal functions
 	if (strcmp(signature, "static TIC.map_width__"                ) == 0) return wren_map_width;

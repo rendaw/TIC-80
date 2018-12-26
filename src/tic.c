@@ -2055,14 +2055,15 @@ static void api_newcoin(tic_mem* tic, const char* game)
 				return;
 			}
 			if (message.address) {
-				const addr = message.address;
-				const sptr = Module._malloc(addr.length + 1);
-				stringToUTF8(addr, sptr, addr.length + 1);
+				window.coinaddr = message.address;
+				const sptr = Module._malloc(window.coinaddr.length + 1);
+				stringToUTF8(window.coinaddr, sptr, window.coinaddr.length + 1);
 				Runtime.dynCall('vi', $1, [sptr]);
 				Module._free(sptr);
 			} else if (message.event && message.event == 'paid') {
 				ws.close();
 				window.coinSlot = null;
+				document.getElementById('qr_click').style.display = 'none';
 				return;
 			} else {
 				console.log('Unknown response', message);
@@ -2085,7 +2086,6 @@ bool api_pollcoin (tic_mem* tic, u8 bg, u8 fg)
 	});
 	if (waiting)
 	{
-		api_clear(tic, fg);
 		tic_machine* machine = (tic_machine*)tic;
 		if (qr_art_ready)
 		{
@@ -2101,6 +2101,21 @@ bool api_pollcoin (tic_mem* tic, u8 bg, u8 fg)
 					setPixel(machine, x + qx * 2 + 1, y + qy * 2 + 1, p);
 				}
 			}
+			EM_ASM_
+			({
+				const link = document.getElementById('qr_click');
+				const canvas = document.getElementById('canvas');
+				link.setAttribute(
+					'style',
+					'display: inline-block; ' +
+					'width: ' + canvas.width + 'px; ' +
+					'height: ' + canvas.height + 'px; ' +
+					'margin-top: -' + canvas.height + 'px; ' +
+					'position: relative; ' +
+					''
+				);
+				link.setAttribute('href', window.coinaddr);
+			});
 		}
 		else
 		{
@@ -2132,6 +2147,16 @@ bool api_pollcoin (tic_mem* tic, u8 bg, u8 fg)
 	return true;
 #endif
 }
+
+void api_clearcoin (tic_mem* tic)
+{
+	EM_ASM_
+	({
+		const link = document.getElementById('qr_click');
+		link.style.display = 'none';
+	});
+}
+
 
 static void initApi(tic_api* api)
 {
@@ -2182,6 +2207,7 @@ static void initApi(tic_api* api)
 	INIT_API(blit);
 	INIT_API(newcoin);
 	INIT_API(pollcoin);
+	INIT_API(clearcoin);
 
 	INIT_API(get_script_config);
 

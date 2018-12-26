@@ -36,7 +36,7 @@
 	"spr", "btn", "btnp", "sfx", "map", "mget", "mset", "peek", "poke", "peek4", "poke4", \
 	"memcpy", "memset", "trace", "pmem", "time", "exit", "font", "mouse", "circ", "circb", "tri", "textri", \
 	"clip", "music", "sync", "reset", "key", "keyp", \
-	"newcoin", "pollcoin"}
+	"newcoin", "pollcoin", "clearcoin"}
 	
 typedef struct
 {

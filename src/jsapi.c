@@ -795,6 +795,13 @@ static duk_ret_t duk_pollcoin(duk_context* duk)
 	return 1;
 }
 
+static duk_ret_t duk_clearcoin(duk_context* duk)
+{
+	tic_mem* memory = (tic_mem*)getDukMachine(duk);
+	memory->api.clearcoin(memory);
+	return 0;
+}
+
 static const char* const ApiKeywords[] = API_KEYWORDS;
 static const struct{duk_c_function func; s32 params;} ApiFunc[] = 
 {
@@ -838,6 +845,7 @@ static const struct{duk_c_function func; s32 params;} ApiFunc[] =
 	{duk_keyp, 3},
 	{duk_newcoin, 1},
 	{duk_pollcoin, 2},
+	{duk_clearcoin, 0},
 };
 
 STATIC_ASSERT(api_func, COUNT_OF(ApiKeywords) == COUNT_OF(ApiFunc));

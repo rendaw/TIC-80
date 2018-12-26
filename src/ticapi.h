@@ -169,6 +169,7 @@ typedef struct
 
 	void (*newcoin) (tic_mem* tic, const char* game);
 	bool (*pollcoin) (tic_mem* tic, u8 bg, u8 fg);
+	void (*clearcoin) (tic_mem* tic);
 
 	const tic_script_config* (*get_script_config)(tic_mem* memory);
 } tic_api;
